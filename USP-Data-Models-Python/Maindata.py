@@ -33,10 +33,11 @@ mountpoint_objectList = []
 objects = objects[1:]
 mountpoint_object = mountpoint_object[1:]
 
-
+#Method to remove the \xad at the end of each text
 def remove_non_breaking_hyphen(text):
     return text.replace('\xad', '')
 
+#For breaking out of nested for loops
 breakObjLoop = False
 breakMobjLoop = False
 
@@ -45,7 +46,7 @@ for obj in objects:
     parameters = obj.find_elements(By.TAG_NAME, "td")
     # Temp list to store the parameter values
     tempObjectList = []
-    
+    #Contains a statement that checks for a the length of the parameter which causes the code to break out of all loops. This to prevent selenium from grabbing data beyond the table.
     for parameter in parameters:
         if len(parameters) == 1:
             breakObjLoop = True
@@ -63,6 +64,7 @@ for mobj in mountpoint_object:
     # Temp list to store the parameter values
     tempMountPointObjectList = []
     
+    #Contains a statement that checks for a - in the 2nd spot which causes the code to break out of all loops. This to prevent selenium from grabbing data beyond the table.
     for index, parameter in enumerate(parameters):
         if index == 1 and remove_non_breaking_hyphen(parameter.text) == '-':
             breakMobjLoop = True
@@ -74,8 +76,10 @@ for mobj in mountpoint_object:
     
     mountpoint_objectList.append(tempMountPointObjectList)
 
+#Encoding changes the encoding type from cp1252 to utf-8 thus fixing the error for encoding special characters like apostrophes and commas
 with open('information.csv', "w", newline='', encoding = "utf-8") as information:
     writer = csv.writer(information, quoting=csv.QUOTE_ALL)
     writer.writerow(['Name', 'Type', 'Write', 'Description', 'Object Default', 'Version'])
+    #Sorts through the lists with these big lists and writes them in rows
     writer.writerows(objectList)
     writer.writerows(mountpoint_objectList)
