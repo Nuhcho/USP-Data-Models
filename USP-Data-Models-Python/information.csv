@@ -1,11 +1,21 @@
 "Name","Type","Write","Description","Object Default","Version"
 "Device.","object","R","The top-level object for a Device.","-","2.0"
+"Reboot()","command","-","Reboot the entity associated with the containing Device..","-","2.12"
+"FactoryReset()","command","-","Factory reset the entity associated with the containing Device..","-","2.0"
+"SelfTestDiagnostics()","command","-","[ASYNC] This diagnostics test is vendor-specific and MAY include testing hardware, software, and/or firmware.","-","2.12"
+"PacketCaptureDiagnostics()","command","-","[ASYNC] This diagnostic command is used to record packet capture data on a valid (layer 2 or above) interface in libpcap or pcapng format.","-","2.13"
+"ScheduleTimer()","command","-","[ASYNC] Schedule an async timer operation. A scheduled timer MUST persist across reboots.
+NOTE: This command changed from synchronous to asynchronous in version 2.14.","-","2.12"
 "Device.Services.","object","R","This object contains general services information.","-","2.0"
 "Device.DeviceInfo.","object","R","This object contains general device information.","-","2.12"
 "Device.DeviceInfo.VendorConfigFile.{i}.","object(0:)","R","Every instance of this object is a Vendor Configuration File, and contains parameters associated with the Vendor Configuration File.
 This table of Vendor Configuration Files is for information only and does not allow the Controller to operate on these files in any way.
 Whenever the Agent successfully restores a configuration file as a result of the Restore() Command, the Agent MUST update this Object.
 At most one entry in this table can exist with a given value for Alias, or with a given value for Name.","-","2.0"
+"Backup()","command","-","[ASYNC] This command is issued to upload the configuration file specified by this Device.DeviceInfo.VendorConfigFile.{i}. instance.
+All results of the actual upload will be contained within the Device.LocalAgent.TransferComplete! event.","-","2.12"
+"Restore()","command","-","[ASYNC] This command is issued to download a configuration file into this Device.DeviceInfo.VendorConfigFile.{i}. instance.
+All results of the actual download will be contained within the Device.LocalAgent.TransferComplete! event.","-","2.12"
 "Device.DeviceInfo.MemoryStatus.","object","R","Status of the device’s physical memory.","-","2.0"
 "Device.DeviceInfo.ProcessStatus.","object","R","Status of the processes on the device.","-","2.0"
 "Device.DeviceInfo.ProcessStatus.Process.{i}.","object(0:)","R","List of all processes running on the device.
@@ -13,12 +23,15 @@ At most one entry in this table can exist with a given value for PID.","-","2.0"
 "Device.DeviceInfo.TemperatureStatus.","object","R","Status of the temperature of the device.","-","2.0"
 "Device.DeviceInfo.TemperatureStatus.TemperatureSensor.{i}.","object(0:)","R","This object represents information that the device has obtained via sampling an internal temperature sensor.
 At most one entry in this table can exist with a given value for Name, or with a given value for Alias.","-","2.0"
+"Reset()","command","-","Resets the temperature sensor.","-","2.12"
 "Device.DeviceInfo.NetworkProperties.","object","R","This object defines the parameters that describe how the device handles network traffic.","-","2.0"
 "Device.DeviceInfo.Processor.{i}.","object(0:)","R","Each table entry represents a hardware or virtual processor that resides on this device.
 At most one entry in this table can exist with a given value for Alias.","-","2.1"
 "Device.DeviceInfo.VendorLogFile.{i}.","object(0:)","R","Each table entry represents a Vendor Log File.
 This table of log files is informational only and does not allow the Controller to operate on these files in any way.
 At most one entry in this table can exist with a given value for Alias, or with a given value for Name.","-","2.1"
+"Upload()","command","-","[ASYNC] This command is issued to upload the log file specified by this Vendor Log File instance.
+All results of the actual upload will be contained within the Device.LocalAgent.TransferComplete! event.","-","2.12"
 "Device.DeviceInfo.Location.{i}.","object(0:)","W","This object contains Location information.
 At most one entry in this table can exist with the same values for both Source and ExternalSource. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose an initial value for ExternalSource such that the new entry does not conflict with any existing entries.","-","2.4"
 "Device.DeviceInfo.DeviceImageFile.{i}.","object(0:)","R","This object describes an image of the device.
@@ -26,8 +39,16 @@ At most one entry in this table can exist with a given value for Location, or wi
 "Device.DeviceInfo.FirmwareImage.{i}.","object(0:)","R","Top-level object for mapping firmware images.
 This is a static table – the number of object instances in this table is defined by the firmware that is currently running.
 At most one entry in this table can exist with a given value for Alias.","-","2.12"
+"Download()","command","-","[ASYNC] This command is issued to download a firmware into this Firmware Image instance.
+All results of the actual download will be contained within the Device.LocalAgent.TransferComplete! event.","-","2.12"
+"Activate()","command","-","[ASYNC] This command is issued to activate this Device.DeviceInfo.FirmwareImage.{i}. instance.
+A Device.DeviceInfo.FirmwareImage.{i}. instance can also be activated by setting the Device.DeviceInfo.BootFirmwareImage parameter and causing the Agent to reboot.
+A successful activation will result in a reboot of the device with this Device.DeviceInfo.FirmwareImage.{i}. as the currently running firmware image. Furthermore, this Device.DeviceInfo.FirmwareImage.{i}. will be referenced by the Device.DeviceInfo.ActiveFirmwareImage parameter.
+A failed activation will result in this Device.DeviceInfo.FirmwareImage.{i}. instance’s BootFailureLog being updated.","-","2.12"
 "Device.Time.","object","R","This object contains parameters relating an NTP or SNTP time client in the CPE.","-","2.0"
 "Device.UserInterface.","object","R","This object contains parameters relating to the user interface of the CPE.","-","2.0"
+"PasswordReset()","command","-","Present only if the Agent provides a password-protected LAN-side user interface and supports LAN-side Auto-Configuration.
+Reset LANConfigSecurity.ConfigPassword to its factory value.","-","2.12"
 "Device.UserInterface.RemoteAccess.","object","R","This object contains parameters relating to remotely accessing the CPE’s user interface.
 Remote access is defined as any entity not of a local subnet attempting to connect to the CPE.
 Remote access requires user authentication. To provide remote access authentication the CPE MUST support a “User” table with at least one instance that has “RemoteAccessCapable” set to true.","-","2.0"
@@ -97,6 +118,16 @@ This object is a member of a union, i.e., it is a member of a group of objects o
 These relate to the [G.998.2] PME (Physical Medium Entity) Aggregation Function (PAF) and to its upper layer interface. PAF lower layer interface statistics are in the BondedChannel.{i}.Ethernet.Stats objects.
 The CPE MUST reset the Stats parameters either when the interface becomes operationally down due to a previous administrative down (i.e. the interface’s Status parameter transitions to a down state after the interface is disabled) or when the interface becomes administratively up (i.e. the interface’s Enable parameter transitions from false to true). Administrative and operational interface status is discussed in [Section 4.2.2/TR-181i2].","-","2.0"
 "Device.DSL.Diagnostics.","object","R","The DSL Diagnostics object.","-","2.0"
+"ADSLLineTest()","command","-","[ASYNC] This command is to provide diagnostic information for a CPE with an ADSL2 or ADSL2+ modem WAN interface, but MAY also be used for ADSL.","-","2.12"
+"SELTUER()","command","-","[ASYNC] This command performs a DSL Single Ended Line Test - Physical Medium Dependent (SELT-PMD) Uncalibrated Echo Response (UER).
+This command is for the CPE, aka the Transmission Unit - Remote end (TU-R).
+Reference: ITU-T Recommendation [Clause A.2, SELT-PMD management entity/G.996.2].","-","2.13"
+"SELTQLN()","command","-","[ASYNC] This command performs a DSL Single Ended Line Test - Physical Medium Dependent (SELT-PMD) Quiet Line Noise (QLN).
+This command is for the CPE, aka the Transmission Unit - Remote end (TU-R).
+Reference: ITU-T Recommendation [Clause A.2, SELT-PMD management entity/G.996.2].","-","2.13"
+"SELTP()","command","-","[ASYNC] This command performs a DSL Single-Ended Line Test - Processed (SELT-P).
+This command is for the CPE, aka the Transmission Unit - Remote end (TU-R).
+Reference: ITU-T Recommendation [G.996.2].","-","2.13"
 "Device.FAST.","object","R","This object models FAST (defined in ITU Recommendation [G.9701]) lines. Each Line models a layer 1 FAST Line interface.","-","2.11"
 "Device.FAST.Line.{i}.","object(0:)","R","FAST Line table (a stackable interface object as described in [Section 4.2/TR-181i2]).
 This table models physical FAST lines.
@@ -136,6 +167,7 @@ At most one entry in this table can exist with a given value for Alias, or with 
 The CPE MUST reset the interface’s Stats parameters (unless otherwise stated in individual object or parameter descriptions) either when the interface becomes operationally down due to a previous administrative down (i.e. the interface’s Status parameter transitions to a down state after the interface is disabled) or when the interface becomes administratively up (i.e. the interface’s Enable parameter transitions from false to true). Administrative and operational interface status is discussed in [Section 4.2.2/TR-181i2].","-","2.0"
 "Device.ATM.Link.{i}.QoS.","object","R","The ATM Link QoS object.","-","2.0"
 "Device.ATM.Diagnostics.","object","R","The ATM Diagnostics object.","-","2.0"
+"F5Loopback()","command","-","[ASYNC] This command provides access to an ATM-layer F5 OAM loopback test.","-","2.12"
 "Device.DOCSIS.","object","R","DOCSIS object. This object models the DOCSIS 3.x cable interface objects.","-","2.15"
 "Device.DOCSIS.Downstream.{i}.","object(0:)","R","DOCSIS Downstream interface table (a stackable interface object as described in [Section 4.2/TR-181i2]). This table models the PHY DOCSIS Downstream interface.
 At most one entry in this table can exist with a given value for Alias, or with a given value for Name.","-","2.0"
@@ -194,6 +226,7 @@ For enabled table entries, if Interface references an interface that is not capa
 Note: The Device.Ethernet.RMONStats.{i}. table includes unique key parameters that are strong references. If a strongly referenced object is deleted, the CPE will set the referencing parameter to an empty string. However, doing so under these circumstances might cause the updated Device.Ethernet.RMONStats.{i}. row to then violate the table’s unique key constraint; if this occurs, the CPE MUST set Status to Error_Misconfigured and disable the offending Device.Ethernet.RMONStats.{i}. row.
 At most one entry in this table can exist with a given value for Alias, or with the same values for all of Interface, VLANID and Queue. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose an initial value for Alias such that the new entry does not conflict with any existing entries.","-","2.4"
 "Device.Ethernet.WoL.","object","R","This object provides access to the WoL (Wake on LAN) funtionality.","-","2.13"
+"SendMagicPacket()","command","-","[ASYNC] This command sends a magic packet over the CPE active Ethernet interfaces.","-","2.13"
 "Device.Ethernet.LAG.{i}.","object(0:)","W","Ethernet Link Aggregation Group (LAG) table (a stackable interface object as described in [Section 4.2/TR-181i2]). Table entries model the Link Aggregation Sub-Layer as defined in [802.3-2015] and [802.1AX-2014]. It is expected that a Device.Ethernet.LAG.{i}. interface can only be stacked above Ethernet.Interface interfaces. The CPE can reject creation of additional LAG instances if this would exceed its capabilities.
 At most one entry in this table can exist with a given value for Alias, or with a given value for Name, or with a given value for MACAddress. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose initial values for Alias, Name and MACAddress such that the new entry does not conflict with any existing entries.","-","2.12"
 "Device.Ethernet.LAG.{i}.Stats.","object","R","Throughput statistics for this interface.
@@ -209,6 +242,7 @@ At most one entry in this table can exist with a given value for Alias, or with 
 See [Appendix XVII/TR-181i2] for Theory of Operation.","-","2.0"
 "Device.USB.USBHosts.Host.{i}.","object(0:)","R","Table of CPE USB Host controllers.
 At most one entry in this table can exist with a given value for Name, or with a given value for Alias.","-","2.0"
+"Reset()","command","-","Reset the Host Controller and apply the reset signaling (see [Chapter 7.1.7.5/USB2.0]) to all of the Host Controller Hub downstream ports.","-","2.12"
 "Device.USB.USBHosts.Host.{i}.Device.{i}.","object(0:)","R","Table of connected USB devices.
 At most one entry in this table can exist with a given value for DeviceNumber.","-","2.0"
 "Device.USB.USBHosts.Host.{i}.Device.{i}.Configuration.{i}.","object(0:)","R","Table of device configurations.
@@ -228,6 +262,10 @@ At most one entry in this table can exist with a given value for Alias. On creat
 "Device.HPNA.Interface.{i}.AssociatedDevice.{i}.","object(0:)","R","This table provides information about other HPNA devices that are directly accessible via this HPNA interface.
 At most one entry in this table can exist with a given value for MACAddress.","-","2.0"
 "Device.HPNA.Diagnostics.","object","R","The HPNA Diagnostics object.","-","2.0"
+"PHYThroughput()","command","-","[ASYNC] HPNA PHY throughput diagnostics configuration and results.
+When diagnostics are requested, all HPNA nodes for which the Interface.{i}.AssociatedDevice.{i}.PHYDiagnosticsEnable parameter is set enter PHY diagnostics mode.","-","2.12"
+"PerformanceMonitoring()","command","-","[ASYNC] HPNA performance monitoring configuration and results.
+Performance monitoring results are sampled from all nodes in the HPNA network. All packet related counters are sampled synchronized at all nodes in the HPNA network in order to derive packet loss calculations in the HPNA network.","-","2.12"
 "Device.MoCA.","object","R","MoCA object that contains the Interface table [MoCAv1.0] [MoCAv1.1].","-","2.0"
 "Device.MoCA.Interface.{i}.","object(0:)","R","MoCA interface table (a stackable interface object as described in [Section 4.2/TR-181i2]). Each table entry models the PHY and MAC levels of a MoCA interface [MoCAv1.0] [MoCAv1.1].
 At most one entry in this table can exist with a given value for Alias, or with a given value for Name.","-","2.0"
@@ -252,6 +290,10 @@ Instances of this object are expected to exist only on G.hn interfaces that are 
 This table MUST contain at least 0 and at most 32 entries.
 At most one entry in this table can exist with a given value for BandNumber. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose an initial value for BandNumber such that the new entry does not conflict with any existing entries.","-","2.8"
 "Device.Ghn.Diagnostics.","object","R","The G.hn Diagnostics object.","-","2.8"
+"PHYThroughput()","command","-","[ASYNC] G.hn PHY throughput diagnostics configuration and results.
+When diagnostics are requested, all G.hn nodes for which the Interface.{i}.PHYThroughputDiagnosticsEnable parameter is set enter PHY diagnostics mode.","-","2.12"
+"PerformanceMonitoring()","command","-","[ASYNC] G.hn Performance Monitoring diagnostics configuration and results.
+When diagnostics are requested, all G.hn nodes for which the Interface.{i}.PerformanceMonitoringDiagnosticsEnable parameter is set enter PHY diagnostics mode.","-","2.12"
 "Device.HomePlug.","object","R","HomePlug object that contains the Interface table. The HomePlug industry standard [HPAV1.1] defines peer to peer communication over powerline medium.","-","2.0"
 "Device.HomePlug.Interface.{i}.","object(0:)","R","HomePlug interface table (a stackable interface object as described in [Section 4.2/TR-181i2]). Each table entry models the PHY and MAC levels of a HomePlug interface [HPAV1.1].
 At most one entry in this table can exist with a given value for Alias, or with a given value for Name.","-","2.0"
@@ -274,9 +316,33 @@ At most one entry in this table can exist with a given value for Alias. On creat
 It shows the MAC addresses of the remote UPA devices with their associated port number, and the MAC addresses of the end-devices (PCs, STBs, routers, etc) connected to Ethernet port of the powerline adapters with their associated logical port. In this way the system identifies to which UPA device an external device is connected to.
 At most one entry in this table can exist with a given value for Alias, or with a given value for MACAddress.","-","2.0"
 "Device.UPA.Diagnostics.","object","R","The UPA Diagnostics object.","-","2.0"
+"InterfaceMeasurement()","command","-","[ASYNC] This command provides access to either a Signal-to-Noise-Ratio (SNR) Port Measurement test or a Channel Frequency Response (CFR) Port Measurement test. The Type parameter is used to select which type of test to perform.
+CFR and SNR measurements are done between a two UPA devices (a local interface and a remote device belonging to the same network).","-","2.12"
 "Device.WiFi.","object","R","The WiFi object is based on the IEEE 802.11 specifications ([802.11-2020]). It defines interface objects (Radio and SSID), and application objects (AccessPoint and EndPoint).","-","2.7"
+"NeighboringWiFiDiagnostic()","command","-","[ASYNC] This command defines access to other WiFi SSIDs that this device is able to receive.","-","2.12"
+"Reset()","command","-","This command represents a request to reset or reboot the Wi-Fi sub-system without resetting or rebooting the device.","-","2.12"
 "Device.WiFi.DataElements.","object","R","This object represents the Wi-Fi Alliance Data Elements as defined in [DataElements] with extended capabilities in additional objects whose names begin with MultiAP.","-","2.13"
 "Device.WiFi.DataElements.Network.","object","R","This object describes a Wi-Fi network containing 1 or more Access Point (AP) devices.","-","2.15"
+"SetTrafficSeparation()","command","-","[ASYNC] This command allows or disallows EasyMesh traffic separation [Section 19.1/EasyMesh]. If Enable is true then the parameters defining traffic separation details can also be input with this command.
+This command applies to all EasyMesh Agent devices in the Wi-Fi network.
+This command can configure Device.{i}.SSIDtoVIDMapping.{i}. and Device.{i}.TrafficSeparationAllowed.
+Status is to be returned after implementation or failed implementation on all agents/devices/APs in this Multi-AP network.","-","2.15"
+"SetServicePrioritization()","command","-","[ASYNC] This command allows or disallows EasyMesh service prioritization [Section 20/EasyMesh]. If Enable is true then the parameters defining service prioritization details can also be input with this command.
+This command can configure Device.{i}.SPRule.{i}., Device.{i}.DSCPMap and Device.{i}.ServicePrioritizationAllowed.
+This command applies to all EasyMesh Agent devices in the Wi-Fi network.
+Status is to be returned after implementation or failed implementation on all agents/devices/APs in this Multi-AP network.","-","2.15"
+"SetPreferredBackhauls()","command","-","[ASYNC] This command sets preferred backhaul links for EasyMesh [EasyMesh] backhaul.","-","2.15"
+"SetSSID()","command","-","[ASYNC] This command specifies an SSID for fronthaul use across this Wi-Fi Multi-AP network, or on this single-AP. Also specifies the PassPhrase, whether to add or remove this SSID, and specifies the Band for each SSID.
+This command applies to all EasyMesh Agent devices in the Wi-Fi network, or to this AP in the single-AP case.
+This command can be used to set only PassPhrase if SSID matches an existing SSID.{i}.SSID for this Band for fronthaul use across this Wi-Fi Multi-AP network.
+This command can configure SSID.{i}.
+Status is to be returned after implementation or failed implementation on all agents/devices/APs in this Multi-AP network.","-","2.15"
+"SetMSCSDisallowed()","command","-","[ASYNC] This command disallows Mirrored Stream Classification Service (MSCS) service prioritization to particular STA(s). [EasyMesh]
+This command applies to all EasyMesh Agent devices in the Wi-Fi network.
+This command configures MSCSDisallowedStaList.","-","2.15"
+"SetSCSDisallowed()","command","-","[ASYNC] This command disallows Stream Classification Service (SCS) service prioritization to particular STA(s). [EasyMesh]
+This command applies to all EasyMesh Agent devices in the Wi-Fi network.
+This command can configure SCSDisallowedStaList.","-","2.15"
 "Device.WiFi.DataElements.Network.SSID.{i}.","object(0:)","R","This object specifies SSIDs for fronthaul use across all agents in this Wi-Fi Multi-AP network, or on this single-AP. Also specifies the Band for each SSID.
 At most one entry in this table can exist with a given value for SSID.","-","2.15"
 "Device.WiFi.DataElements.Network.MultiAPSteeringSummaryStats.","object","R","The summary of statistics related to Multi-AP Steering for the Wi-Fi network.
@@ -284,6 +350,11 @@ The counters contained in Device.WiFi.DataElements.Network.MultiAPSteeringSummar
 "Device.WiFi.DataElements.Network.Device.{i}.","object(1:)","R","Each instance of this object represents an individual Access Point device in the Wi-Fi network.
 This table MUST contain at least 1 entry.
 At most one entry in this table can exist with a given value for ID.","-","2.15"
+"SetSTASteeringState()","command","-","[ASYNC] Disallow or allow EasyMesh [EasyMesh] controller-initiated station (STA) steering on this device.
+This command can configure STASteeringState.","-","2.15"
+"SetDFSState()","command","-","[ASYNC] Enables/disables the use of Dynamic Frequency Selection (DFS) channels on this device.
+This command can configure DFSEnable.","-","2.15"
+"SetAnticipatedChannelPreference()","command","-","[ASYNC] This command requests to set the Anticipated Channel Preference. The operating classes, and list of channels for each operating class, are input. For 2.4GHz and 5GHz bands, only 20MHz operating classes are valid inputs.","-","2.15"
 "Device.WiFi.DataElements.Network.Device.{i}.Default8021Q.{i}.","object(0:)","W","The default 802.1Q settings for EasyMesh service prioritization [EasyMesh].
 At most one entry in this table can exist with a given value for PrimaryVID. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose an initial value for PrimaryVID such that the new entry does not conflict with any existing entries.","-","2.15"
 "Device.WiFi.DataElements.Network.Device.{i}.SSIDtoVIDMapping.{i}.","object(0:)","R","The Service Set Identifier (SSID) to VLAN ID mapping for EasyMesh traffic separation [EasyMesh].
@@ -312,6 +383,8 @@ At most one entry in this table can exist with a given value for BurstStartTime.
 The endpoints of the backhaul interface are represented by the (Device’s ID and interface MAC Address). This object represents the upward view of the backhaul interface. The two endpoints of the backhaul interface are - (BackhaulDeviceID, BackhaulMACAddress) of the uplinked Backhaul Device - MACAddress of this Access Point Device
 BackhaulDeviceID / BackhaulMACAddress <– LinkType — < MACAddress
 an empty string is reserved for the Device.WiFi.DataElements.Network.Device.{i}.MultiAPDevice.Backhaul. instance that represents the Multi-AP Controller.","-","2.15"
+"SteerWiFiBackhaul()","command","-","[ASYNC] This command requests the Wi-Fi backhaul link to be steered to associate to a different BSS when the device is working as a bridge in a mesh network. The device needs to already have the necessary credentials for the switch to happen.
+The TargetBSS should be an instance of a Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.BSS.{i}.BSSID.","-","2.15"
 "Device.WiFi.DataElements.Network.Device.{i}.MultiAPDevice.Backhaul.CurrentOperatingClassProfile.{i}.","object(0:)","R","Describes one of the current Operating Classes in use by this Radio. One Opeating Class is indicated for each current Operating Channel Bandwidth.
 The Channel indicated for the 20 MHz Operating Class is equal to the current primary channel.
 At most one entry in this table can exist with a given value for Class.","-","2.15"
@@ -319,6 +392,17 @@ At most one entry in this table can exist with a given value for Class.","-","2.
 "Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.","object(1:)","R","This object represents all of the individual Radios contained within the identified Access Point device known to the controller.
 This table MUST contain at least 1 entry.
 At most one entry in this table can exist with a given value for ID.","-","2.15"
+"ChannelScanRequest()","command","-","[ASYNC] Request to initiate a channel scan. The operating classes, and list of channels for each operating class, are input. For 2.4GHz and 5GHz bands, only 20MHz operating classes are valid inputs.
+This command should result in updating Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.ScanResult.","-","2.15"
+"RadioEnable()","command","-","[ASYNC] Request to enable or disable this radio.
+This command can result in updating Enabled.","-","2.15"
+"SetTxPowerLimit()","command","-","[ASYNC] This command sets the upper limit on transmit power TransmitPowerLimit for this radio and OperatingClass.
+This command can configure CurrentOperatingClassProfile.{i}.TransmitPowerLimit.","-","2.15"
+"SetSpatialReuse()","command","-","[ASYNC] This command sets the spatial reuse configuration of this radio. Applies only to Wi-Fi 6 and possibly later generations of radios.
+Acronyms: Spatial Reuse Group (SRG), Overlapping Basic Service Set (OBSS), Preamble Detection (PD).
+This command can configure SpatialReuse..
+If some input parameter(s) are not provided, then the corresponding existing parameter in SpatialReuse. applies.","-","2.15"
+"WiFiRestart()","command","-","[ASYNC] Request a restart of the Wi-Fi subsystem.","-","2.15"
 "Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.ScanResult.{i}.","object(0:)","R","The list of neighboring Access Points discovered by a Radio organized per Operating Class and Channel tuple.","-","2.14"
 "Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.ScanResult.{i}.OpClassScan.{i}.","object(0:)","R","The Operating Class of neighboring Access Points discovered by a Radio during a channel scan.
 At most one entry in this table can exist with a given value for OperatingClass.","-","2.14"
@@ -357,6 +441,10 @@ Acronyms: Spatial Reuse Group (SRG), Overlapping Basic Service Set (OBSS), Pream
 "Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.BSS.{i}.","object(1:)","R","A single logical BSS operating on this radio.
 This table MUST contain at least 1 entry.
 At most one entry in this table can exist with a given value for BSSID.","-","2.15"
+"SetQMDescriptors()","command","-","[ASYNC] This command configures each of the descriptor elements for Mirrored Stream Classification Service (MSCS), Stream Classification Service (SCS), or QoS Management. [EasyMesh].
+This command can configure QMDescriptor.{i}..
+If QMDescriptor.{i}.DescriptorElement is for SCS or MSCS, the AP adds/changes/removes the rule according to the descriptor element request type.
+If a QMDescriptor.{i}.DescriptorElement is a QoS Management DSCP Policy, the AP sends it to the STA identified by the QMDescriptor.{i}.ClientMAC.","-","2.15"
 "Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.BSS.{i}.QMDescriptor.{i}.","object(0:)","R","This object contains a table of DescriptorElement.
 At most one entry in this table can exist with a given value for ClientMAC.","-","2.15"
 "Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.BSS.{i}.MultiAPSteering.","object","R","A single logical Access Point operating on this radio.","-","2.15"
@@ -364,6 +452,8 @@ At most one entry in this table can exist with a given value for ClientMAC.","-"
 At most one entry in this table can exist with a given value for MACAddress.","-","2.13"
 "Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.BSS.{i}.STA.{i}.MultiAPSTA.","object","R","The summary of statistics and operations for an individual STA on the Wi-Fi network.
 The counters contained in Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.BSS.{i}.STA.{i}.MultiAPSTA. are all reset on reboot.","-","2.15"
+"Disassociate()","command","-","[ASYNC] This command represents a request to disassociate this associated device.","-","2.15"
+"BTMRequest()","command","-","[ASYNC] This command requests initiation of a BSS Transition Management (BTM) request to influence this client’s roaming behavior to another BSS as defined in [Section 9.6.13.9/802.11-2020].","-","2.15"
 "Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.BSS.{i}.STA.{i}.MultiAPSTA.SteeringSummaryStats.","object","R","The summary of statistics related to Multi-AP Steering for this STA on the Wi-Fi network.
 The counters contained in Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.BSS.{i}.STA.{i}.MultiAPSTA.SteeringSummaryStats. are all reset on reboot.","-","2.0"
 "Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.BSS.{i}.STA.{i}.MultiAPSTA.SteeringHistory.{i}.","object(0:)","R","The history of Multi-AP Steering for this STA on the Wi-Fi network.
@@ -373,6 +463,8 @@ At most one entry in this table can exist with the same values for all of Time, 
 "Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.BSS.{i}.STA.{i}.TIDQueueSizes.{i}.","object(0:)","R","Object describing Traffic Identifiers (TIDs), and Queue Size for each TID, for this Associated Device (STA).
 At most one entry in this table can exist with a given value for TID.","-","2.15"
 "Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.MultiAPRadio.","object","R","This object represents an individual Access Point Radio in the Wi-Fi network.","-","2.15"
+"FullScan()","command","-","[ASYNC] This parameter represents a request to initiate a full scan on this radio, including all channels supported by this radio, for a specific DwellTime and HomeTime. This command will result in updating Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.ScanResult.","-","2.15"
+"ChannelScan()","command","-","[ASYNC] This parameter represents a request to initiate a channel scan on this radio on the given channel using a specific DwellTime. This command should result in updating Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.ScanResult.","-","2.15"
 "Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.UnassociatedSTA.{i}.","object(0:)","R","Each instance represents a Non-AP STA that has been discovered by the Radio but is not associated to any of the BSS operating on the Radio.
 At most one entry in this table can exist with a given value for MACAddress.","-","2.13"
 "Device.WiFi.DataElements.AssociationEvent.","object","R","This object contains the events generated when a STA associates to a BSS.","-","2.13"
@@ -386,6 +478,10 @@ At most one entry in this table can exist with a given value for MACAddress.","-
 If the device can establish more than one connection simultaneously (e.g. a dual radio device), a separate Device.WiFi.Radio.{i}. instance MUST be used for each physical radio of the device. See [Appendix III.1/TR-181i2] for additional information.
 Note: A dual-band single-radio device (e.g. an 802.11a/b/g radio) can be configured to operate at 2.4 or 5 GHz frequency bands, but only a single frequency band is used to transmit/receive at a given time. Therefore, a single Device.WiFi.Radio.{i}. instance is used even for a dual-band radio.
 At most one entry in this table can exist with a given value for Alias, or with a given value for Name.","-","2.0"
+"RemoteMeasurementRequest()","command","-","[ASYNC] This command requests initiation of a Remote Measurement request to retrieve measurement data from a BSS on this radio. Upon receipt of this request, this radio is to initiate a measurement of the output SignalStrength and Noise for the indicated input.","-","2.15"
+"InitiateCCAMeasurement()","command","-","[ASYNC] This command represents a request to initiate a Clear Channel Assessment (CCA) measurement scan on this radio on the given channel using a specific DwellTime.","-","2.15"
+"FullScan()","command","-","[ASYNC] This parameter represents a request to initiate a full scan on this radio, including all channels supported by this radio, for a specific DwellTime and HomeTime. This command will result in updating Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.ScanResult.","-","2.15"
+"ChannelScan()","command","-","[ASYNC] This parameter represents a request to initiate a channel scan on this radio on the given channel using a specific DwellTime. This command should result in updating Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.ScanResult.","-","2.15"
 "Device.WiFi.Radio.{i}.Stats.","object","R","Throughput statistics for this interface. Packet counters here count 802.11 WiFi frames. See [Appendix III/TR-181i2] for further details. The CPE MUST reset the interface’s Stats parameters (unless otherwise stated in individual object or parameter descriptions) either when the interface becomes operationally down due to a previous administrative down (i.e. the interface’s Status parameter transitions to a down state after the interface is disabled) or when the interface becomes administratively up (i.e. the interface’s Enable parameter transitions from false to true). Administrative and operational interface status is discussed in [Section 4.2.2/TR-181i2].","-","2.0"
 "Device.WiFi.SSID.{i}.","object(0:)","W","WiFi SSID table (a stackable interface object as described in [Section 4.2/TR-181i2]), where table entries model the MAC layer. A WiFi SSID entry is typically stacked on top of a Radio object.
 WiFi SSID is also a multiplexing layer, i.e. more than one Device.WiFi.SSID.{i}. can be stacked above a single Radio.
@@ -396,7 +492,10 @@ For enabled table entries, if SSIDReference is not a valid reference then the ta
 Note: The Device.WiFi.AccessPoint.{i}. table includes a unique key parameter that is a strong reference. If a strongly referenced object is deleted, the CPE will set the referencing parameter to an empty string. However, doing so under these circumstances might cause the updated Device.WiFi.AccessPoint.{i}. row to then violate the table’s unique key constraint; if this occurs, the CPE MUST set Status to Error_Misconfigured and disable the offending Device.WiFi.AccessPoint.{i}. row.
 At most one entry in this table can exist with a given value for Alias, or with a given value for SSIDReference. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose an initial value for Alias such that the new entry does not conflict with any existing entries.","-","2.0"
 "Device.WiFi.AccessPoint.{i}.Security.","object","R","This object contains security related parameters that apply to a CPE acting as an Access Point [802.11-2007].","-","2.0"
+"Reset()","command","-","Reset this instance’s WiFi security settings to their factory default values. The affected settings include ModeEnabled, WEPKey, PreSharedKey, KeyPassphrase, SAEPassphrase, and WPS.PIN (if applicable).
+If the command cannot be executed, the agent MUST reject the command. Possible failure reasons include a lack of default values or if ModeEnabled is an Enterprise type, i.e. WPA-Enterprise, WPA2-Enterprise, WPA3-Enterprise, or WPA-WPA2-Enterprise.","-","2.12"
 "Device.WiFi.AccessPoint.{i}.WPS.","object","R","{{div: unexpected arguments <[‘WPSv2.0’]> (after <[classes()] [‘This object contains parameters related to Wi-Fi Protected Setup for’, nl(), ’this access point (as specified in ‘, bibref([‘WPSv1.0’]), ’ or’, nl(), ‘{bibref’]>)}}).}}","-","2.0"
+"InitiateWPSPBC()","command","-","[ASYNC] Initiates a Wi-Fi Protected Setup (WPS) Push Button Configuration (PBC) process as defined in [WPS 2.0] .","-","2.15"
 "Device.WiFi.AccessPoint.{i}.AssociatedDevice.{i}.","object(0:)","R","A table of the devices currently associated with the access point.
 At most one entry in this table can exist with a given value for MACAddress.","-","2.0"
 "Device.WiFi.AccessPoint.{i}.AssociatedDevice.{i}.Stats.","object","R","These count bytes or packets sent to, or received from, this Associated Device, which is a WiFi station associated to this access point. Packet counters here count 802.11 WiFi frames.
@@ -500,6 +599,9 @@ At most one entry in this table can exist with a given value for Alias. On creat
 "Device.PPP.","object","R","Point-to-Point Protocol [RFC1661]. This object contains the Interface table.","-","2.0"
 "Device.PPP.Interface.{i}.","object(0:)","W","PPP interface table (a stackable interface object as described in [Section 4.2/TR-181i2]).
 At most one entry in this table can exist with a given value for Alias, or with a given value for Name. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose initial values for Alias and Name such that the new entry does not conflict with any existing entries.","-","2.0"
+"Reset()","command","-","On a reset the device MUST tear down the existing PPP connection represented by this object and establish a new one.
+The device MAY delay resetting the connection in order to avoid interruption of a user service such as an ongoing voice call.
+Reset on a disabled interface is a no-op (not an error).","-","2.12"
 "Device.PPP.Interface.{i}.PPPoE.","object(0:1)","R","PPPoE object that functionally groups PPPoE related parameters.
 PPPoE is only applicable when the lower layer provides Ethernet frames, e.g. ATM with EoA, PTM, or anything else that supports an Ethernet MAC.
 This object is a member of a union, i.e., it is a member of a group of objects of which only one can exist at a given time.","-","2.0"
@@ -515,6 +617,9 @@ When the Controller administratively disables the interface, i.e. sets Enable to
 Any Tunneled IP interface instances instantiated by the CPE MUST NOT have any statistics, writable parameters, IP addresses or IPv6 prefixes. Any read-only parameters, e.g. Status, MUST return the same information as for the corresponding Tunnel interface. The reason for these rules is that Tunneled IP interfaces exist only in order to be the targets of references (within the data model) and do not model any concepts over and above those already modeled by the Tunnel IP interfaces.
 Note that Tunnel and Tunneled IP interfaces are part of a legacy mechanism that is only used for IPv6rd, DSLite and IPsec tunnels and MUST NOT be used in any other context. For all other tunneling mechanisms Normal IP interfaces are stacked above technology-specific Tunnel Interfaces, e.g. above GRE.Tunnel.{i}.Interface or MAP.Domain.{i}.Interface objects.
 At most one entry in this table can exist with a given value for Alias, or with a given value for Name. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose initial values for Alias and Name such that the new entry does not conflict with any existing entries.","-","2.0"
+"Reset()","command","-","On a reset device MUST tear down the existing IP connection represented by this object and establish a new one.
+The device MAY delay resetting the connection in order to avoid interruption of a user service such as an ongoing voice call.
+Reset on a disabled interface is a no-op (not an error).","-","2.12"
 "Device.IP.Interface.{i}.IPv4Address.{i}.","object(0:)","W","IPv4 address table. Entries are auto-created and auto-deleted as IP addresses are added and deleted via DHCP, auto-IP, or IPCP. Static entries are created and configured by the Controller.
 At most one entry in this table can exist with a given value for Alias, or with the same values for both IPAddress and SubnetMask. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose initial values for Alias and IPAddress such that the new entry does not conflict with any existing entries.","-","2.0"
 "Device.IP.Interface.{i}.Stats.","object","R","Throughput statistics for this interface.
@@ -546,6 +651,16 @@ At most one entry in this table can exist with a given value for Alias, or with 
 "Device.IP.ActivePort.{i}.","object(0:)","R","This table lists the ports on which TCP connections are listening or established.
 At most one entry in this table can exist with the same values for all of LocalIPAddress, LocalPort, RemoteIPAddress and RemotePort.","-","2.0"
 "Device.IP.Diagnostics.","object","R","The IP Diagnostics object.","-","2.0"
+"IPPing()","command","-","[ASYNC] This command provides access to an IP-layer ping test.","-","2.12"
+"TraceRoute()","command","-","[ASYNC] This command defines access to an IP-layer trace-route test for the specified IP interface.","-","2.12"
+"DownloadDiagnostics()","command","-","[ASYNC] This command defines the diagnostics configuration for a HTTP and FTP DownloadDiagnostics Test.
+Files received in the DownloadDiagnostics do not require file storage on the CPE device.","-","2.12"
+"UploadDiagnostics()","command","-","[ASYNC] This command defines the diagnostics configuration for a HTTP or FTP UploadDiagnostics test.
+Files sent by the UploadDiagnostics do not require file storage on the CPE device, and MAY be an arbitrary stream of bytes.","-","2.12"
+"UDPEchoDiagnostics()","command","-","[ASYNC] This command defines the diagnostics configuration for a UDP Echo test [Appendix A.1/TR-143] defined in [RFC862] or a UDP Echo Plus test defined in [Appendix A.1/TR-143].","-","2.12"
+"IPLayerCapacity()","command","-","[ASYNC] This command defines the IP Layer Capacity measurement configuration. IP Layer Capacity measurement is specified in [TR-471].
+Data received in the IP Layer Capacity measurement do not require storage on the device.","-","2.14"
+"ServerSelectionDiagnostics()","command","-","[ASYNC] This command provides access to a diagnostics test that performs either an ICMP Ping or UDP Echo ping against multiple hosts determining which one has the smallest average response time. There MUST be a ping response to the transmitted ping, or timeout, before the next ping is sent out.","-","2.12"
 "Device.IP.Diagnostics.UDPEchoConfig.","object","R","This object allows the CPE to be configured to perform the UDP Echo Service defined in [RFC862] and UDP Echo Plus Service defined in [Appendix A.1/TR-143].","-","2.0"
 "Device.LLDP.","object","R","This object contains Link Layer Discovery Protocol (LLDP) [802.1AB-2009] related objects and parameters.","-","2.8"
 "Device.LLDP.Discovery.","object","R","This object is used for managing the discovery of LLDP devices.
@@ -697,6 +812,7 @@ At most one entry in this table can exist with a given value for Alias, or with 
 "Device.Routing.RouteInformation.InterfaceSetting.{i}.","object(0:)","R","IP Interface RA route information table. Contains received RA route information [RFC4191]. As such, the data in this table cannot be modified.
 At most one entry in this table can exist with a given value for Interface.","-","2.2"
 "Device.Routing.Babel.","object","R","This object provides parameters for configuration, troubleshooting, and monitoring of the Babel routing protocol [RFC8966]. This data model is based on the Babel information model defined in [RFC9046].","-","2.15"
+"StatsReset()","command","-","This command represents a request to reset all statistics counters to zero. Statistics are provided in InterfaceSetting.{i}.Stats..","-","2.15"
 "Device.Routing.Babel.Constants.","object","R","This object represents the constants used by the Babel protocol.","-","2.0"
 "Device.Routing.Babel.InterfaceSetting.{i}.","object(0:)","W","This object provides parameters related to the interfaces the Babel protocol is operating over and can act as a routing protocol for.
 At most one entry in this table can exist with a given value for Alias. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose an initial value for Alias such that the new entry does not conflict with any existing entries.","-","2.0"
@@ -709,6 +825,7 @@ At most one entry in this table can exist with the same values for both RoutePre
 At most one entry in this table can exist with a given value for Alias. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose an initial value for Alias such that the new entry does not conflict with any existing entries.","-","2.0"
 "Device.Routing.Babel.MACKeySet.{i}.MACKey.{i}.","object(0:)","W","This object provides the MAC keys used to calculate MACs for verification and sending by the instance.
 At most one entry in this table can exist with a given value for Alias. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose an initial value for Alias such that the new entry does not conflict with any existing entries.","-","2.0"
+"MACTest()","command","-","This command allows the MAC key and MAC algorithm to be tested to see if they produce an expected outcome. The command calculates a MAC for InputString using the KeyValue and MACKeyAlgorithm and compares that to the value of InputMAC. If the values match, the output Match is true.","-","2.0"
 "Device.Routing.Babel.DTLSCertSet.{i}.","object(0:)","W","This object provides parameters related to use of the DTLS security mechanism [RFC8968] to encrypt Babel packets.
 At most one entry in this table can exist with a given value for Alias. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose an initial value for Alias such that the new entry does not conflict with any existing entries.","-","2.0"
 "Device.Routing.Babel.DTLSCertSet.{i}.DTLSCert.{i}.","object(0:)","W","This object provides the certificates used for verification and signing by the instance with DTLS.
@@ -784,6 +901,10 @@ At most one entry in this table can exist with a given value for DNSServer, or w
 Note: Management of re-directing queries to the device embedded DNS server is not defined in this version of the specification.
 At most one entry in this table can exist with a given value for DNSServer, or with a given value for Alias. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose initial values for DNSServer and Alias such that the new entry does not conflict with any existing entries.","-","2.0"
 "Device.DNS.Diagnostics.","object","R","The DNS Diagnostics object containing the {{object: referenced NSLookupDiagnostics() is command, not object}} test.","-","2.0"
+"NSLookupDiagnostics()","command","-","[ASYNC] This command defines access to an IP-layer NS Lookup test for the specified IP interface.
+When initiated, the NS Lookup test will contact DNSServer and look up HostName NumberOfRepetitions times.
+There will be a Result instance for each time the device performs a DNS lookup, which is determined by the value of NumberOfRepetitions.
+Any previous Result instances are removed when a new test is initiated.","-","2.12"
 "Device.DNS.SD.","object","R","This object contains the DNS Service Discovery [DNS-SD] object and parameters necessary to discover services and their associated devices.
 Upon reboot the the contents of the service table are repopulated. When the DNS.SD service is disabled, the contents of the service table is implementation specific.","-","2.6"
 "Device.DNS.SD.Service.{i}.","object(0:)","R","The Device.DNS.SD.Service.{i}. table contains discovered DNS-SD services. DNS.SD service information is provided in DNS RR SRV records [RFC2782]. The Service Instance Name [Section 4.1 Structured Instance Names/DNS-SD] further specifies information about the service name (RFC2782 Service field) and domain name (RFC2782 Name field) in the form:
@@ -841,6 +962,7 @@ For enabled table entries, if Interface is not a valid reference then the table 
 Note: The Device.DHCPv4.Client.{i}. table includes a unique key parameter that is a strong reference. If a strongly referenced object is deleted, the CPE will set the referencing parameter to an empty string. However, doing so under these circumstances might cause the updated Device.DHCPv4.Client.{i}. row to then violate the table’s unique key constraint; if this occurs, the CPE MUST set Status to Error_Misconfigured and disable the offending Device.DHCPv4.Client.{i}. row.
 This table MUST contain at least 1 entry.
 At most one entry in this table can exist with a given value for Alias, or with a given value for Interface. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose an initial value for Alias such that the new entry does not conflict with any existing entries.","-","2.0"
+"Renew()","command","-","The DHCP client will renew its DHCP lease.","-","2.12"
 "Device.DHCPv4.Client.{i}.SentOption.{i}.","object(0:)","W","Each instance of this object represents a DHCP option that MUST, if enabled, be sent in DHCP client requests. All sent DHCP options MUST be listed.
 At most one entry in this table can exist with a given value for Alias, or with a given value for Tag. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose initial values for Alias and Tag such that the new entry does not conflict with any existing entries.","-","2.0"
 "Device.DHCPv4.Client.{i}.ReqOption.{i}.","object(0:)","W","Each instance of this object represents a DHCP option that MUST, if enabled, be requested in DHCP client requests. All requested DHCP options MUST be listed.
@@ -874,6 +996,7 @@ For enabled table entries, if Interface is not a valid reference to an IPv6-capa
 Note: The Device.DHCPv6.Client.{i}. table includes a unique key parameter that is a strong reference. If a strongly referenced object is deleted, the CPE will set the referencing parameter to an empty string. However, doing so under these circumstances might cause the updated Device.DHCPv6.Client.{i}. row to then violate the table’s unique key constraint; if this occurs, the CPE MUST set Status to Error_Misconfigured and disable the offending Device.DHCPv6.Client.{i}. row.
 This table MUST contain at least 1 entry.
 At most one entry in this table can exist with a given value for Alias, or with a given value for Interface. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose an initial value for Alias such that the new entry does not conflict with any existing entries.","-","2.2"
+"Renew()","command","-","The Device.DHCPv6.Client.{i}. will renew its DHCPv6-supplied information (i.e. the Agent will do a renew or information request as needed, updating both stateful and stateless parameter values discovered by this Client instance).","-","2.12"
 "Device.DHCPv6.Client.{i}.Server.{i}.","object(0:)","R","This is a transitory table that lists the discovered DHCPv6 servers (it does not model a local DHCP server). Table entries are automatically created to correspond with these servers. However, it is a local matter to the CPE when to delete old table entries.
 At most one entry in this table can exist with a given value for SourceAddress.","-","2.2"
 "Device.DHCPv6.Client.{i}.SentOption.{i}.","object(0:)","W","The top-level options and option values (including any encapsulated options) that the client will send to the server.
@@ -903,10 +1026,15 @@ For enabled table entries, if Interface is not a valid reference then the table 
 Note: The Device.IEEE8021x.Supplicant.{i}. table includes a unique key parameter that is a strong reference. If a strongly referenced object is deleted, the CPE will set the referencing parameter to an empty string. However, doing so under these circumstances might cause the updated Device.IEEE8021x.Supplicant.{i}. row to then violate the table’s unique key constraint; if this occurs, the CPE MUST set Status to Error_Misconfigured and disable the offending Device.IEEE8021x.Supplicant.{i}. row.
 This table MUST contain at least 1 entry.
 At most one entry in this table can exist with a given value for Alias, or with a given value for Interface. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose an initial value for Alias such that the new entry does not conflict with any existing entries.","-","2.0"
+"Reset()","command","-","On a reset the device MUST reset the session by performing an initial authentication attempt as defined in [Section 9.6.1.3/802.1x-2004], Initialize Port by sending out the EAP start message.
+The device MAY delay resetting the resource in order to avoid interruption of a user service such as an ongoing voice call.","-","2.12"
+"Disconnect()","command","-","On a reset the device MUST disconnect (forced unauthentication) the resource.
+The device MAY delay re-authentication of the resource in order to avoid interruption of a user service such as an ongoing voice call.","-","2.12"
 "Device.IEEE8021x.Supplicant.{i}.Stats.","object","R","802.1x Authentication Supplicant EAP statistics information for this resource.","-","2.0"
 "Device.IEEE8021x.Supplicant.{i}.EAPMD5.","object","R","802.1x Authentication Supplicant provisioning information used for MD5 shared secret exchange. This object will not exist if EAP-MD5 is not a supported authentication type.","-","2.0"
 "Device.IEEE8021x.Supplicant.{i}.EAPTLS.","object","R","802.1x Authentication Supplicant provisioning information used for TLS certificate authentication. This object will not exist if the EAP-TLS is not a supported authentication type.","-","2.0"
 "Device.Users.","object","R","Users object that contains the User, Group, and Role tables.","-","2.0"
+"CheckCredentialsDiagnostics()","command","-","[ASYNC] Checks whether the input Username and Password are valid for allowing access to the user interface on the device. If not valid, then an indication of why they are not valid is output.","-","2.15"
 "Device.Users.User.{i}.","object(0:)","W","This object contains parameters relating to the user characteristics.
 At most one entry in this table can exist with a given value for Username, or with a given value for Alias, or with a given value for UserID. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose initial values for Alias and UserID such that the new entry does not conflict with any existing entries.","-","2.0"
 "Device.Users.Group.{i}.","object(0:)","W","This object contains parameters relating to the characteristics of a user group.
@@ -918,6 +1046,7 @@ At most one entry in this table can exist with a given value for RoleName, or wi
 "Device.SmartCardReaders.","object","R","SmartCardReaders object that contains the SmartCardReader table.","-","2.0"
 "Device.SmartCardReaders.SmartCardReader.{i}.","object(0:)","R","This object describes the characteristics of the smart card reader.
 At most one entry in this table can exist with a given value for Name, or with a given value for Alias.","-","2.0"
+"Reset()","command","-","Reset the SmartCard Reader and the associated SmartCard.","-","2.12"
 "Device.SmartCardReaders.SmartCardReader.{i}.SmartCard.","object","R","Status of currently associated smart card.","-","2.0"
 "Device.UPnP.","object","R","This object contains all UPnP related objects and parameters including Device and Discovery related objects and parameters.","-","2.0"
 "Device.UPnP.Device.","object","R","This object defines the UPnP devices and UPnP services that are implemented by the CPE.","-","2.0"
@@ -960,6 +1089,11 @@ Periodic statistics are measured over a sample interval (which can be aligned wi
 This object provides a single set of global settings that affect the entire device unless overridden locally.","-","2.0"
 "Device.PeriodicStatistics.SampleSet.{i}.","object(0:)","W","Periodic statistics sample set table. Each sample set has its own sample interval etc.
 At most one entry in this table can exist with a given value for Name, or with a given value for Alias. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose an initial value for Alias such that the new entry does not conflict with any existing entries.","-","2.0"
+"ForceSample()","command","-","Force statistics for the current sample to be calculated and updated in the data model.
+If this is the first time that this command is called during the current sample interval, this MUST cause a new value to be added to each of the periodic statistics comma-separated list parameters, and the ReportEndTime and all SampleSeconds parameters MUST be updated accordingly.
+If this is not the first time that this command is during the current sample interval, then the new values that were added as described in the previous paragraph, and the ReportEndTime and all SampleSeconds parameters, MUST be updated accordingly.
+Note that {{param: empty ref only valid in parameter descriptions}} just provides a “sneak preview” of the current sample. It does not create a new sample and it does not interfere with the sample interval schedule.
+At the end of each sample interval, if this command was executed during the sample interval then the new values that were added as described above, and the ReportEndTime and all SampleSeconds parameters, will be updated accordingly. In other words, the partial sample data that was created when the command was executed will be updated one last time at the end of the sample interval.","-","2.12"
 "Device.PeriodicStatistics.SampleSet.{i}.Parameter.{i}.","object(0:)","W","Periodic statistics parameter table for this sample set. This table contains entries for parameters whose values are to be sampled.
 Note that the comma-separated lists in this object (SampleSeconds, SuspectData and Values) only ever change (a) when first enabled, (b) when Device.PeriodicStatistics.SampleSet.{i}.ForceSample() is set to true (a “sneak preview” of the current sample), or (c) at the end of the sample interval.
 At most one entry in this table can exist with a given value for Reference, or with a given value for Alias. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose an initial value for Alias such that the new entry does not conflict with any existing entries.","-","2.0"
@@ -994,6 +1128,7 @@ At most one entry in this table can exist with a given value for AlarmIdentifier
 At most one entry in this table can exist with the same values for both SerialNumber and Issuer.","-","2.4"
 "Device.FAP.","object","R","This object is the container for all Femto related component objects, to prevent pollution of the so-called global namespace of the BBF with FAP specific objects.","-","2.4"
 "Device.FAP.GPS.","object","R","This object contains the parameters relating to the GPS scan.","-","2.4"
+"GPSReset()","command","-","Reset the GPS Hardware.","-","2.12"
 "Device.FAP.GPS.ContinuousGPSStatus.","object","R","When ContinuousGPS is true, the parameters in this object contain the GPS status as it is continuously monitored.
 When ContinuousGPS is false, the parameters in this object are not being updated and their values are not accurate.","-","2.4"
 "Device.FAP.GPS.AGPSServerConfig.","object","R","This object contains parameters for the configuration of the Assisted Global Positioning System (A-GPS) server. See also [Section 3.2/3GPP-TS.25.171]","-","2.4"
@@ -1027,6 +1162,8 @@ The Bulk Data Collection Profiles are measured over a reporting interval (which 
 "Device.BulkData.Profile.{i}.","object(0:)","W","A set of Bulk Data Collection profiles.
 Each profile represents a bulk data report, including its own timing configuration, communications configuration, and set of parameters. This allows the Controller to configure multiple reports to be generated at different times for different sets of data.
 At most one entry in this table can exist with a given value for Alias. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose an initial value for Alias such that the new entry does not conflict with any existing entries.","-","2.5"
+"ForceCollection()","command","-","Start the bulk data collection and transmission as defined in this profile immediately, regardless of the current values of the Enable and ReportingInterval parameters.
+This command can be used for testing of the bulk data collection mechanism and profile but also to preempt any regular schedule without affecting it.","-","2.15"
 "Device.BulkData.Profile.{i}.Parameter.{i}.","object(0:)","W","Bulk data parameter table.
 Each entry in this table represents a parameter (or set of parameters if a partial path is provided) to be collected and reported.","-","2.5"
 "Device.BulkData.Profile.{i}.CSVEncoding.","object","R","This object defines the properties to be used when the Profile object’s EncodingType parameter value is CSV.","-","2.10"
@@ -1077,6 +1214,9 @@ At most one entry in this table can exist with a given value for NeighborMACAddr
 "Device.MQTT.Capabilities.","object","R","Indicates the MQTT capabilities of the device.","-","2.10"
 "Device.MQTT.Client.{i}.","object(0:)","W","MQTT client table. Contains a list of configured MQTT clients.
 At most one entry in this table can exist with a given value for Alias, or with a given value for Name. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose initial values for Alias and Name such that the new entry does not conflict with any existing entries.","-","2.10"
+"ForceReconnect()","command","-","Disconnects the MQTT client from the MQTT broker and reconnects it again (toggle connection). It is only effective if the MQTT client is currently connected to the MQTT broker (Parameter Status is Connected).
+If the MQTT client is in a different state, the command has no effect.
+This command may be used to immediately apply changes in the MQTT connection settings.","-","2.12"
 "Device.MQTT.Client.{i}.Subscription.{i}.","object(0:)","W","List of MQTT subscriptions handled by the MQTT client.
 The MQTT client MUST subscribe with the MQTT broker for all subscription instances, whose parameter Enable is set to true, when it establishes a new connection to the MQTT broker. Disabled subscription instances with Enable set to false will be ignored during connection establishment.
 At most one entry in this table can exist with a given value for Alias, or with a given value for Topic. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose initial values for Alias and Topic such that the new entry does not conflict with any existing entries.","-","2.10"
@@ -1089,6 +1229,9 @@ The CPE MUST reset the Stats parameters after the MQTT client gets (re-)enabled 
 At most one entry in this table can exist with a given value for Alias, or with a given value for Name. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose initial values for Alias and Name such that the new entry does not conflict with any existing entries.","-","2.10"
 "Device.MQTT.Broker.{i}.Bridge.{i}.","object(0:)","W","Configures MQTT bridges, which are used to communicate with other MQTT brokers.
 At most one entry in this table can exist with a given value for Alias, or with a given value for Name. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose initial values for Alias and Name such that the new entry does not conflict with any existing entries.","-","2.10"
+"ForceReconnect()","command","-","Disconnects the MQTT bridge to the remote MQTT broker and reconnects it again (toggle connection). It is only effective if the MQTT bridge is currently connected to the remote MQTT broker (Parameter Status is Connected).
+If the MQTT bridge is in a different state, the command has no effect.
+This command may be used to immediately apply changes in the MQTT connection settings.","-","2.12"
 "Device.MQTT.Broker.{i}.Bridge.{i}.Server.{i}.","object(0:)","W","Each Device.MQTT.Broker.{i}.Bridge.{i}.Server.{i}. instance represents a MQTT bridge server to be used for a Bridge. A remote MQTT broker, which is connected by a MQTT bridge can be reachable via several host addresses each represented by its own Device.MQTT.Broker.{i}.Bridge.{i}.Server.{i}. table entry. For an active MQTT bridge at least one enabled entry has to exist.
 If a MQTT bridge gets enabled by setting the parameter Bridge.{i}.Enable to true, which either has an empty Device.MQTT.Broker.{i}.Bridge.{i}.Server.{i}. table or the Device.MQTT.Broker.{i}.Bridge.{i}.Server.{i}. table only contains instances whose Enable is set to false, the Bridge.{i}.Status has to be set to Error_Misconfigured.
 Any attempt to delete an instance, which is currently in use (Bridge.{i}.ServerConnection refers to the instance to be deleted), has to be rejected.
@@ -1234,6 +1377,7 @@ At most one entry in this table can exist with a given value for Alias, or with 
 The CPE MUST reset the interface’s Stats parameters (unless otherwise stated in individual object or parameter descriptions) either when the interface becomes operationally down due to a previous administrative down (i.e. the interface’s Status parameter transitions to a down state after the interface is disabled). Operational interface status is discussed in [Section 4.2.2/TR-181i2].","-","2.14"
 "Device.LocalAgent.","object","R","This object contains general information about the USP Agent itself. For information related to the Device that hosts the Agent, please reference the DeviceInfo object.
 NOTE: The Vendor Log File table (DeviceInfo.VendorLogFile) details are located on the DeviceInfo object.","-","2.12"
+"AddCertificate()","command","-","This command is issued to allow a Controller (with the proper permissions) to add a new certificate to Certificate.{i}. This does not automatically produce a trust relationship with the host identified by the Certificate. To produce a trust relationship, an entry is required to exist in Controller.{i}.Credential or ControllerTrust.Credential.{i}.Credential that references the new Certificate.{i} entry. The Agent will use the Serial Number and Issuer fields from the input Certificate to populate the Certificate.{i}.SerialNumber and Certificate.{i}.Issuer parameters. If Certificate already has an instance with the same Certificate.{i}.SerialNumber and Certificate.{i}.Issuer parameters, this command will fail. To replace an instance with the same Certificate.{i}.SerialNumber and Certificate.{i}.Issuer, the existing instance must first be deleted.","-","2.12"
 "Device.LocalAgent.MTP.{i}.","object(0:)","W","Each instance of this table represents a MTP used by the local Agent.
 At most one entry in this table can exist with a given value for Alias. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose an initial value for Alias such that the new entry does not conflict with any existing entries.","-","2.0"
 "Device.LocalAgent.MTP.{i}.STOMP.","object(0:1)","R","If the USP Endpoint uses the STOMP Message Transport Protocol (MTP), then this object contains STOMP Client specific configuration parameters related to how the Agent communicates with the STOMP Server.
@@ -1260,6 +1404,9 @@ At most one entry in this table can exist with a given value for Alias. On creat
 "Device.LocalAgent.Controller.{i}.","object(0:)","W","Each instance of this table represents a USP Controller that has access to this USP Agent.
 On the deletion of an entry from this table, the Agent MUST send the ObjectDeletion notification to all subscribed recipients, even if the recipient is the deleted Controller itself. This notification is the last notification sent to this Controller.
 At most one entry in this table can exist with a given value for EndpointID, or with a given value for Alias. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose an initial value for Alias such that the new entry does not conflict with any existing entries.","-","2.12"
+"AddMyCertificate()","command","-","This command is issued to allow a Controller to add a new certificate for itself. This can be useful when the current certificate is expiring or has become compromised. This command creates a new entry in Certificate and adds a reference to the new entry to the Controller’s Controller.{i}.Credential. The Agent will use the Serial Number and Issuer fields from the input Certificate to populate the Certificate.{i}.SerialNumber and Certificate.{i}.Issuer parameters. If Certificate already has an instance with the same Certificate.{i}.SerialNumber and Certificate.{i}.Issuer parameters, this command will fail. To replace an instance with the same Certificate.{i}.SerialNumber and Certificate.{i}.Issuer, the existing instance must first be deleted.
+This command can only be used by the Controller to whom the object belongs. If the Controller issuing the USP Operate message is a different Controller, the message MUST be denied.","-","2.12"
+"SendOnBoardRequest()","command","-","Requests the Agent to send an OnBoardRequest notification to this Controller.","-","2.12"
 "Device.LocalAgent.Controller.{i}.MTP.{i}.","object(0:)","W","Each instance of this table represents a MTP used by this Controller.
 At most one entry in this table can exist with a given value for Protocol, or with a given value for Alias. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose an initial value for Alias such that the new entry does not conflict with any existing entries.","-","2.0"
 "Device.LocalAgent.Controller.{i}.MTP.{i}.STOMP.","object(0:1)","R","If the USP Endpoint uses the STOMP Message Transport Protocol (MTP), then this object contains STOMP Client specific configuration parameters related to how this Controller communicates with the STOMP Server.
@@ -1268,6 +1415,7 @@ This object is a member of a union, i.e., it is a member of a group of objects o
 "Device.LocalAgent.Controller.{i}.MTP.{i}.WebSocket.","object(0:1)","R","If the USP Endpoint uses the WebSocket Message Transport Protocol (MTP) as a WebSocket client, then this object contains WebSocket specific configuration parameters.
 This object MUST be present if, and only if, Protocol is WebSocket.
 This object is a member of a union, i.e., it is a member of a group of objects of which only one can exist at a given time.","-","2.0"
+"Reset()","command","-","[ASYNC] If enabled, this command will either request to start or restart an WebSocket session with the Controller.","-","2.0"
 "Device.LocalAgent.Controller.{i}.MTP.{i}.MQTT.","object(0:1)","R","If the USP Endpoint uses the MQTT Message Transport Protocol (MTP), then this object contains MQTT Client specific configuration parameters related to how this Controller communicates with the MQTT broker.
 This object MUST be present if, and only if, Protocol is MQTT.
 This object is a member of a union, i.e., it is a member of a group of objects of which only one can exist at a given time.","-","2.13"
@@ -1276,9 +1424,19 @@ This object is a member of a union, i.e., it is a member of a group of objects o
 Any Parameter (identified by ParameterName) contained in this table MUST be included within the param_map element of the Boot! event.
 At most one entry in this table can exist with a given value for ParameterName, or with a given value for Alias. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose an initial value for Alias such that the new entry does not conflict with any existing entries.","-","2.12"
 "Device.LocalAgent.Controller.{i}.E2ESession.","object","R","The Device.LocalAgent.Controller.{i}.E2ESession. object represents the End to End (E2E) Session Context functionality for this Controller.{i} object instance.","-","2.12"
+"Reset()","command","-","[ASYNC] If the Device.LocalAgent.Controller.{i}.E2ESession. is enabled then this command will either request to start or restart a Session Context with the remote endpoint.
+If the Device.LocalAgent.Controller.{i}.E2ESession. is not enabled and there is an active Session Context then this command will terminate that Session Context with the remote endpoint.
+If the Device.LocalAgent.Controller.{i}.E2ESession. is not enabled and there is no active Session Context then this command does nothing.","-","2.12"
 "Device.LocalAgent.Certificate.{i}.","object(0:)","R","Each instance of this table represents information related to a X.509 certificate (see [RFC5280]) of a Controller or Certificate Authority. Instances are referenced from Controller.{i}.Credential and ControllerTrust.Credential.{i}.Credential.
 At most one entry in this table can exist with the same values for both SerialNumber and Issuer, or with a given value for Alias.","-","2.12"
+"Delete()","command","-","This command is issued to allow a Controller (with the proper permissions) to delete an entry from the Certificate.{i}. It also removes references to the Certificate in LocalAgent.Controller.{i}.Credential or LocalAgent.ControllerTrust.Credential.{i}.Credential and removes any X.509 certificate data the Agent had stored related to the entry.","-","2.12"
+"GetFingerprint()","command","-","This command is issued to allow a Controller to request the value of a fingerprint calculated for the specified table entry using the input FingerprintAlgorithm.","-","2.12"
 "Device.LocalAgent.ControllerTrust.","object","R","This object contains information that an Agent applies when establishing a trust relationship with a Controller.","-","2.12"
+"RequestChallenge()","command","-","This command is issued to retrieve the instruction for the referenced challenge.
+There is at most one (1) outstanding RequestChallenge for a requesting Controller.
+As such, any new challenges with a different value of the ChallengeRef parameter are denied until a successful response to the outstanding challenge is received by the Agent or the current RequestChallenge expires.
+When the value of the ChallengeRef parameter defined in the RequestChallenge does not exist, the Agent returns an “Invalid Value” error.","-","2.12"
+"ChallengeResponse()","command","-","This command is issued to return the response of challenge.","-","2.12"
 "Device.LocalAgent.ControllerTrust.Role.{i}.","object(0:)","W","Each instance of this table represents a Role that can be assigned to or inherited by a Controller via the Controller Trust mechanism. The Role contains a set of permissions that determine how the Controller can interact with the data model.
 If multiple permission entries associated with this table contain a Target that evaluates to the same instantiated Object/Parameter for multiple Roles, then the permissions to be used are a union of the identified permissions.
 At most one entry in this table can exist with a given value for Name, or with a given value for Alias. On creation of a new table entry, the Agent MUST (if not supplied by the Controller on creation) choose initial values for Name and Alias such that the new entry does not conflict with any existing entries.","-","2.0"
@@ -1303,13 +1461,28 @@ At most one entry in this table can exist with a given value for Alias, or with 
 "Device.LocalAgent.Request.{i}.","object(0:)","R","Device.LocalAgent.Request.{i}. instances are created using USP Operate messages. Only Operate messages with async=true will create a Device.LocalAgent.Request.{i}. instance in the data model.
 When the command of the Operate completes, then this Device.LocalAgent.Request.{i}. instance is removed from this table.
 At most one entry in this table can exist with the same values for all of Originator, Command and CommandKey, or with a given value for Alias.","-","2.12"
+"Cancel()","command","-","Request cancelation of this Device.LocalAgent.Request.{i}.’s command.
+This command completes immediately. If successful, Status will immediately change to Canceling and will change to Canceled when the cancelation is complete.","-","2.12"
 "Device.Standby.","object","R","Capabilities of a Device as it pertains to entering a standby state.","-","2.12"
 "Device.SoftwareModules.","object","R","Top level object for dynamically managed software applications.","-","2.1"
+"InstallDU()","command","-","[ASYNC] Install one or more Deployment Units (DUs) to the associated Device.SoftwareModules..","-","2.12"
 "Device.SoftwareModules.ExecEnv.{i}.","object(0:)","R","The Execution Environments that are available on the device, along with their properties and configurable settings.
 At most one entry in this table can exist with a given value for Alias, or with a given value for Name.","-","2.1"
+"SetRunLevel()","command","-","Provides a mechanism to remotely manipulate the run level of this Device.SoftwareModules.ExecEnv.{i}., meaning that altering this comand will change the value of the CurrentRunLevel.
+Run levels dictate which Execution Units will be started. Execution Units will be started if CurrentRunLevel is greater than or equal to ExecutionUnit.{i}.RunLevel and ExecutionUnit.{i}.AutoStart is true.","-","2.12"
+"Reset()","command","-","This command causes this Device.SoftwareModules.ExecEnv.{i}. to revert back to the state it was in when the device last issued a Boot event with a cause of a local or remote factory reset.
+The following requirements dictate what MUST happen for the reset to be complete:
+All Deployment Units that were installed after the last Boot (with cause of a factory reset) event MUST be removed
+All persistent storage, configuration files, and log files that were associated with the removed Deployment Units MUST be removed
+Any Deployment Unit that is still installed against the Execution Environment MUST be restored to the version present when the last Boot (with cause of a factory reset) event was issued
+Any Deployment Unit that was present when the last Boot (with cause of a factory reset) event was issued, but was subsequently uninstalled and is now not present, MUST be installed with the version that was present when the last Boot (with cause of a factory reset) event was issued
+The Execution Environment MUST be restored to the version and configuration present when the last Boot (with cause of a factory reset) event was issued
+The Execution Environment MUST be restarted after all other restoration requirements have been met","-","2.12"
 "Device.SoftwareModules.DeploymentUnit.{i}.","object(0:)","R","This table serves as the Deployment Unit inventory and contains status information about each Deployment Unit.
 A new instance of this table gets created during the installation of a Software Module.
 At most one entry in this table can exist with the same values for all of UUID, Version and ExecutionEnvRef, or with a given value for Alias.","-","2.1"
+"Update()","command","-","[ASYNC] Update the associated Device.SoftwareModules.DeploymentUnit.{i}..","-","2.1"
+"Uninstall()","command","-","[ASYNC] Uninstall the associated Device.SoftwareModules.DeploymentUnit.{i}..","-","2.1"
 "Device.SoftwareModules.ExecutionUnit.{i}.","object(0:)","R","This table serves as the Execution Unit inventory and contains both status information about each Execution Unit as well as configurable parameters for each Execution Unit.
 Each DeploymentUnit that is installed can have zero or more Execution Units.
 Once a Deployment Unit is installed it populates this table with its contained Execution Units.
@@ -1317,6 +1490,8 @@ When the Deployment Unit (that caused this Device.SoftwareModules.ExecutionUnit.
 When the Deployment Unit (that caused this Device.SoftwareModules.ExecutionUnit.{i}. to come into existence) is uninstalled, this instance is removed.
 Each Device.SoftwareModules.ExecutionUnit.{i}. MAY also contain a set of vendor specific parameters displaying status and maintaining configuration that reside under the Extensions object.
 At most one entry in this table can exist with a given value for EUID, or with a given value for Alias.","-","2.1"
+"SetRequestedState()","command","-","Set the state transition that the Controller is requesting for this instance of the Device.SoftwareModules.ExecutionUnit.{i}. object.
+If this instance of the Device.SoftwareModules.ExecutionUnit.{i}. object is associated with an Execution Environment that is disabled and an attempt is made to alter this value, then a error message MUST be generated.","-","2.1"
 "Device.SoftwareModules.ExecutionUnit.{i}.Extensions.","object","R","This object proposes a general location for vendor extensions specific to this Execution Unit, which allows multiple Execution Units to expose parameters without the concern of conflicting parameter names. These vendor extensions are related to displaying status and maintaining configuration for this Execution Unit.
 It is also possible for the Execution Unit to expose status and configuration parameters within Service objects or as embedded objects and parameters directly within the root data model, in which case the combination of References and use of GetSupportDM and GetInstances USP messages will be used to determine their locations.","-","2.12"
 "Device.ProxiedDevice.{i}.","object(0:)","R","Each entry in the table is a ProxiedDevice object that is a mount point. Each ProxiedDevice represents distinct hardware Devices. ProxiedDevice objects are virtual and abstracted representation of functionality, that exists on hardware other than that which the Agent is running.
@@ -1333,11 +1508,16 @@ At most one entry in this table can exist with the same values for all of Host, 
 At most one entry in this table can exist with a given value for Alias, or with a given value for Name.","-","2.13"
 "Device.IoTCapability.{i}.BinaryControl.","object","R","This capability provides a boolean function that is mapped to the type of function it represents.
 E.g. If the instance represents a door lock (Type is Locked), a Value of true says the door lock is locked.","-","2.13"
+"Toggle()","command","-","[ASYNC] Toggle the Value.","-","2.13"
 "Device.IoTCapability.{i}.LevelControl.","object","R","LevelController is used to model a control with a range of continuous states.
 These values are configurable via Value and measured in Unit and are restricted between a Min and Max values.
 Intensity profile - Value of intensity and ability to update that level through StepUp() and StepDown() commands with a configurable StepValue.","-","2.13"
+"StepUp()","command","-","[ASYNC] Step Up the Value.","-","2.13"
+"StepDown()","command","-","[ASYNC] Step Down the Value.","-","2.13"
 "Device.IoTCapability.{i}.EnumControl.","object","R","The EnumControl reflects the Enumerated level Control functionality.
 The enumeration is defined by the ValidValues parameter. This will provide a comma-separated list of values that are available for configuring via the Value parameter.","-","2.13"
+"StepUp()","command","-","[ASYNC] Step up the Value to the next allowed value in the enum.","-","2.13"
+"StepDown()","command","-","[ASYNC] Step down the Value to the previous allowed value in the enum.","-","2.13"
 "Device.IoTCapability.{i}.BinarySensor.","object","R","BinarySensor is used to reflect the functionality of a sensor that reports a Value. The Sensitivity configures the degree of sensitivity that the sensor uses for detection.
 Timed BinarySensor profile - To provide the ability to add time based control over the Value attribute. How long the Value remains true is controlled by the HoldTime. RestTime controls how soon, after being activated, the sensor will respond to continuous events.","-","2.13"
 "Device.IoTCapability.{i}.LevelSensor.","object","R","LevelSensor is used to reflect the functionality of a sensor that reports a Value in Unit.","-","2.13"
@@ -1346,183 +1526,3 @@ Timed BinarySensor profile - To provide the ability to add time based control ov
 "Device.Node.{i}.","object(0:)","R","Each Node instance represents distinct functional devices, which are virtual and abstracted representation of functionality.
 This object is a mount point, under which mountable objects can be mounted.
 At most one entry in this table can exist with a given value for Alias.","-","2.13"
-"Reboot()","command","-","Reboot the entity associated with the containing Device..","-","2.12"
-"FactoryReset()","command","-","Factory reset the entity associated with the containing Device..","-","2.0"
-"SelfTestDiagnostics()","command","-","[ASYNC] This diagnostics test is vendor-specific and MAY include testing hardware, software, and/or firmware.","-","2.12"
-"PacketCaptureDiagnostics()","command","-","[ASYNC] This diagnostic command is used to record packet capture data on a valid (layer 2 or above) interface in libpcap or pcapng format.","-","2.13"
-"ScheduleTimer()","command","-","[ASYNC] Schedule an async timer operation. A scheduled timer MUST persist across reboots.
-NOTE: This command changed from synchronous to asynchronous in version 2.14.","-","2.12"
-"Backup()","command","-","[ASYNC] This command is issued to upload the configuration file specified by this Device.DeviceInfo.VendorConfigFile.{i}. instance.
-All results of the actual upload will be contained within the Device.LocalAgent.TransferComplete! event.","-","2.12"
-"Restore()","command","-","[ASYNC] This command is issued to download a configuration file into this Device.DeviceInfo.VendorConfigFile.{i}. instance.
-All results of the actual download will be contained within the Device.LocalAgent.TransferComplete! event.","-","2.12"
-"Reset()","command","-","Resets the temperature sensor.","-","2.12"
-"Upload()","command","-","[ASYNC] This command is issued to upload the log file specified by this Vendor Log File instance.
-All results of the actual upload will be contained within the Device.LocalAgent.TransferComplete! event.","-","2.12"
-"Download()","command","-","[ASYNC] This command is issued to download a firmware into this Firmware Image instance.
-All results of the actual download will be contained within the Device.LocalAgent.TransferComplete! event.","-","2.12"
-"Activate()","command","-","[ASYNC] This command is issued to activate this Device.DeviceInfo.FirmwareImage.{i}. instance.
-A Device.DeviceInfo.FirmwareImage.{i}. instance can also be activated by setting the Device.DeviceInfo.BootFirmwareImage parameter and causing the Agent to reboot.
-A successful activation will result in a reboot of the device with this Device.DeviceInfo.FirmwareImage.{i}. as the currently running firmware image. Furthermore, this Device.DeviceInfo.FirmwareImage.{i}. will be referenced by the Device.DeviceInfo.ActiveFirmwareImage parameter.
-A failed activation will result in this Device.DeviceInfo.FirmwareImage.{i}. instance’s BootFailureLog being updated.","-","2.12"
-"PasswordReset()","command","-","Present only if the Agent provides a password-protected LAN-side user interface and supports LAN-side Auto-Configuration.
-Reset LANConfigSecurity.ConfigPassword to its factory value.","-","2.12"
-"ADSLLineTest()","command","-","[ASYNC] This command is to provide diagnostic information for a CPE with an ADSL2 or ADSL2+ modem WAN interface, but MAY also be used for ADSL.","-","2.12"
-"SELTUER()","command","-","[ASYNC] This command performs a DSL Single Ended Line Test - Physical Medium Dependent (SELT-PMD) Uncalibrated Echo Response (UER).
-This command is for the CPE, aka the Transmission Unit - Remote end (TU-R).
-Reference: ITU-T Recommendation [Clause A.2, SELT-PMD management entity/G.996.2].","-","2.13"
-"SELTQLN()","command","-","[ASYNC] This command performs a DSL Single Ended Line Test - Physical Medium Dependent (SELT-PMD) Quiet Line Noise (QLN).
-This command is for the CPE, aka the Transmission Unit - Remote end (TU-R).
-Reference: ITU-T Recommendation [Clause A.2, SELT-PMD management entity/G.996.2].","-","2.13"
-"SELTP()","command","-","[ASYNC] This command performs a DSL Single-Ended Line Test - Processed (SELT-P).
-This command is for the CPE, aka the Transmission Unit - Remote end (TU-R).
-Reference: ITU-T Recommendation [G.996.2].","-","2.13"
-"F5Loopback()","command","-","[ASYNC] This command provides access to an ATM-layer F5 OAM loopback test.","-","2.12"
-"SendMagicPacket()","command","-","[ASYNC] This command sends a magic packet over the CPE active Ethernet interfaces.","-","2.13"
-"Reset()","command","-","Reset the Host Controller and apply the reset signaling (see [Chapter 7.1.7.5/USB2.0]) to all of the Host Controller Hub downstream ports.","-","2.12"
-"PHYThroughput()","command","-","[ASYNC] HPNA PHY throughput diagnostics configuration and results.
-When diagnostics are requested, all HPNA nodes for which the Interface.{i}.AssociatedDevice.{i}.PHYDiagnosticsEnable parameter is set enter PHY diagnostics mode.","-","2.12"
-"PerformanceMonitoring()","command","-","[ASYNC] HPNA performance monitoring configuration and results.
-Performance monitoring results are sampled from all nodes in the HPNA network. All packet related counters are sampled synchronized at all nodes in the HPNA network in order to derive packet loss calculations in the HPNA network.","-","2.12"
-"PHYThroughput()","command","-","[ASYNC] G.hn PHY throughput diagnostics configuration and results.
-When diagnostics are requested, all G.hn nodes for which the Interface.{i}.PHYThroughputDiagnosticsEnable parameter is set enter PHY diagnostics mode.","-","2.12"
-"PerformanceMonitoring()","command","-","[ASYNC] G.hn Performance Monitoring diagnostics configuration and results.
-When diagnostics are requested, all G.hn nodes for which the Interface.{i}.PerformanceMonitoringDiagnosticsEnable parameter is set enter PHY diagnostics mode.","-","2.12"
-"InterfaceMeasurement()","command","-","[ASYNC] This command provides access to either a Signal-to-Noise-Ratio (SNR) Port Measurement test or a Channel Frequency Response (CFR) Port Measurement test. The Type parameter is used to select which type of test to perform.
-CFR and SNR measurements are done between a two UPA devices (a local interface and a remote device belonging to the same network).","-","2.12"
-"NeighboringWiFiDiagnostic()","command","-","[ASYNC] This command defines access to other WiFi SSIDs that this device is able to receive.","-","2.12"
-"Reset()","command","-","This command represents a request to reset or reboot the Wi-Fi sub-system without resetting or rebooting the device.","-","2.12"
-"SetTrafficSeparation()","command","-","[ASYNC] This command allows or disallows EasyMesh traffic separation [Section 19.1/EasyMesh]. If Enable is true then the parameters defining traffic separation details can also be input with this command.
-This command applies to all EasyMesh Agent devices in the Wi-Fi network.
-This command can configure Device.{i}.SSIDtoVIDMapping.{i}. and Device.{i}.TrafficSeparationAllowed.
-Status is to be returned after implementation or failed implementation on all agents/devices/APs in this Multi-AP network.","-","2.15"
-"SetServicePrioritization()","command","-","[ASYNC] This command allows or disallows EasyMesh service prioritization [Section 20/EasyMesh]. If Enable is true then the parameters defining service prioritization details can also be input with this command.
-This command can configure Device.{i}.SPRule.{i}., Device.{i}.DSCPMap and Device.{i}.ServicePrioritizationAllowed.
-This command applies to all EasyMesh Agent devices in the Wi-Fi network.
-Status is to be returned after implementation or failed implementation on all agents/devices/APs in this Multi-AP network.","-","2.15"
-"SetPreferredBackhauls()","command","-","[ASYNC] This command sets preferred backhaul links for EasyMesh [EasyMesh] backhaul.","-","2.15"
-"SetSSID()","command","-","[ASYNC] This command specifies an SSID for fronthaul use across this Wi-Fi Multi-AP network, or on this single-AP. Also specifies the PassPhrase, whether to add or remove this SSID, and specifies the Band for each SSID.
-This command applies to all EasyMesh Agent devices in the Wi-Fi network, or to this AP in the single-AP case.
-This command can be used to set only PassPhrase if SSID matches an existing SSID.{i}.SSID for this Band for fronthaul use across this Wi-Fi Multi-AP network.
-This command can configure SSID.{i}.
-Status is to be returned after implementation or failed implementation on all agents/devices/APs in this Multi-AP network.","-","2.15"
-"SetMSCSDisallowed()","command","-","[ASYNC] This command disallows Mirrored Stream Classification Service (MSCS) service prioritization to particular STA(s). [EasyMesh]
-This command applies to all EasyMesh Agent devices in the Wi-Fi network.
-This command configures MSCSDisallowedStaList.","-","2.15"
-"SetSCSDisallowed()","command","-","[ASYNC] This command disallows Stream Classification Service (SCS) service prioritization to particular STA(s). [EasyMesh]
-This command applies to all EasyMesh Agent devices in the Wi-Fi network.
-This command can configure SCSDisallowedStaList.","-","2.15"
-"SetSTASteeringState()","command","-","[ASYNC] Disallow or allow EasyMesh [EasyMesh] controller-initiated station (STA) steering on this device.
-This command can configure STASteeringState.","-","2.15"
-"SetDFSState()","command","-","[ASYNC] Enables/disables the use of Dynamic Frequency Selection (DFS) channels on this device.
-This command can configure DFSEnable.","-","2.15"
-"SetAnticipatedChannelPreference()","command","-","[ASYNC] This command requests to set the Anticipated Channel Preference. The operating classes, and list of channels for each operating class, are input. For 2.4GHz and 5GHz bands, only 20MHz operating classes are valid inputs.","-","2.15"
-"SteerWiFiBackhaul()","command","-","[ASYNC] This command requests the Wi-Fi backhaul link to be steered to associate to a different BSS when the device is working as a bridge in a mesh network. The device needs to already have the necessary credentials for the switch to happen.
-The TargetBSS should be an instance of a Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.BSS.{i}.BSSID.","-","2.15"
-"ChannelScanRequest()","command","-","[ASYNC] Request to initiate a channel scan. The operating classes, and list of channels for each operating class, are input. For 2.4GHz and 5GHz bands, only 20MHz operating classes are valid inputs.
-This command should result in updating Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.ScanResult.","-","2.15"
-"RadioEnable()","command","-","[ASYNC] Request to enable or disable this radio.
-This command can result in updating Enabled.","-","2.15"
-"SetTxPowerLimit()","command","-","[ASYNC] This command sets the upper limit on transmit power TransmitPowerLimit for this radio and OperatingClass.
-This command can configure CurrentOperatingClassProfile.{i}.TransmitPowerLimit.","-","2.15"
-"SetSpatialReuse()","command","-","[ASYNC] This command sets the spatial reuse configuration of this radio. Applies only to Wi-Fi 6 and possibly later generations of radios.
-Acronyms: Spatial Reuse Group (SRG), Overlapping Basic Service Set (OBSS), Preamble Detection (PD).
-This command can configure SpatialReuse..
-If some input parameter(s) are not provided, then the corresponding existing parameter in SpatialReuse. applies.","-","2.15"
-"WiFiRestart()","command","-","[ASYNC] Request a restart of the Wi-Fi subsystem.","-","2.15"
-"SetQMDescriptors()","command","-","[ASYNC] This command configures each of the descriptor elements for Mirrored Stream Classification Service (MSCS), Stream Classification Service (SCS), or QoS Management. [EasyMesh].
-This command can configure QMDescriptor.{i}..
-If QMDescriptor.{i}.DescriptorElement is for SCS or MSCS, the AP adds/changes/removes the rule according to the descriptor element request type.
-If a QMDescriptor.{i}.DescriptorElement is a QoS Management DSCP Policy, the AP sends it to the STA identified by the QMDescriptor.{i}.ClientMAC.","-","2.15"
-"Disassociate()","command","-","[ASYNC] This command represents a request to disassociate this associated device.","-","2.15"
-"BTMRequest()","command","-","[ASYNC] This command requests initiation of a BSS Transition Management (BTM) request to influence this client’s roaming behavior to another BSS as defined in [Section 9.6.13.9/802.11-2020].","-","2.15"
-"FullScan()","command","-","[ASYNC] This parameter represents a request to initiate a full scan on this radio, including all channels supported by this radio, for a specific DwellTime and HomeTime. This command will result in updating Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.ScanResult.","-","2.15"
-"ChannelScan()","command","-","[ASYNC] This parameter represents a request to initiate a channel scan on this radio on the given channel using a specific DwellTime. This command should result in updating Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.ScanResult.","-","2.15"
-"RemoteMeasurementRequest()","command","-","[ASYNC] This command requests initiation of a Remote Measurement request to retrieve measurement data from a BSS on this radio. Upon receipt of this request, this radio is to initiate a measurement of the output SignalStrength and Noise for the indicated input.","-","2.15"
-"InitiateCCAMeasurement()","command","-","[ASYNC] This command represents a request to initiate a Clear Channel Assessment (CCA) measurement scan on this radio on the given channel using a specific DwellTime.","-","2.15"
-"FullScan()","command","-","[ASYNC] This parameter represents a request to initiate a full scan on this radio, including all channels supported by this radio, for a specific DwellTime and HomeTime. This command will result in updating Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.ScanResult.","-","2.15"
-"ChannelScan()","command","-","[ASYNC] This parameter represents a request to initiate a channel scan on this radio on the given channel using a specific DwellTime. This command should result in updating Device.WiFi.DataElements.Network.Device.{i}.Radio.{i}.ScanResult.","-","2.15"
-"Reset()","command","-","Reset this instance’s WiFi security settings to their factory default values. The affected settings include ModeEnabled, WEPKey, PreSharedKey, KeyPassphrase, SAEPassphrase, and WPS.PIN (if applicable).
-If the command cannot be executed, the agent MUST reject the command. Possible failure reasons include a lack of default values or if ModeEnabled is an Enterprise type, i.e. WPA-Enterprise, WPA2-Enterprise, WPA3-Enterprise, or WPA-WPA2-Enterprise.","-","2.12"
-"InitiateWPSPBC()","command","-","[ASYNC] Initiates a Wi-Fi Protected Setup (WPS) Push Button Configuration (PBC) process as defined in [WPS 2.0] .","-","2.15"
-"Reset()","command","-","On a reset the device MUST tear down the existing PPP connection represented by this object and establish a new one.
-The device MAY delay resetting the connection in order to avoid interruption of a user service such as an ongoing voice call.
-Reset on a disabled interface is a no-op (not an error).","-","2.12"
-"Reset()","command","-","On a reset device MUST tear down the existing IP connection represented by this object and establish a new one.
-The device MAY delay resetting the connection in order to avoid interruption of a user service such as an ongoing voice call.
-Reset on a disabled interface is a no-op (not an error).","-","2.12"
-"IPPing()","command","-","[ASYNC] This command provides access to an IP-layer ping test.","-","2.12"
-"TraceRoute()","command","-","[ASYNC] This command defines access to an IP-layer trace-route test for the specified IP interface.","-","2.12"
-"DownloadDiagnostics()","command","-","[ASYNC] This command defines the diagnostics configuration for a HTTP and FTP DownloadDiagnostics Test.
-Files received in the DownloadDiagnostics do not require file storage on the CPE device.","-","2.12"
-"UploadDiagnostics()","command","-","[ASYNC] This command defines the diagnostics configuration for a HTTP or FTP UploadDiagnostics test.
-Files sent by the UploadDiagnostics do not require file storage on the CPE device, and MAY be an arbitrary stream of bytes.","-","2.12"
-"UDPEchoDiagnostics()","command","-","[ASYNC] This command defines the diagnostics configuration for a UDP Echo test [Appendix A.1/TR-143] defined in [RFC862] or a UDP Echo Plus test defined in [Appendix A.1/TR-143].","-","2.12"
-"IPLayerCapacity()","command","-","[ASYNC] This command defines the IP Layer Capacity measurement configuration. IP Layer Capacity measurement is specified in [TR-471].
-Data received in the IP Layer Capacity measurement do not require storage on the device.","-","2.14"
-"ServerSelectionDiagnostics()","command","-","[ASYNC] This command provides access to a diagnostics test that performs either an ICMP Ping or UDP Echo ping against multiple hosts determining which one has the smallest average response time. There MUST be a ping response to the transmitted ping, or timeout, before the next ping is sent out.","-","2.12"
-"StatsReset()","command","-","This command represents a request to reset all statistics counters to zero. Statistics are provided in InterfaceSetting.{i}.Stats..","-","2.15"
-"MACTest()","command","-","This command allows the MAC key and MAC algorithm to be tested to see if they produce an expected outcome. The command calculates a MAC for InputString using the KeyValue and MACKeyAlgorithm and compares that to the value of InputMAC. If the values match, the output Match is true.","-","2.0"
-"NSLookupDiagnostics()","command","-","[ASYNC] This command defines access to an IP-layer NS Lookup test for the specified IP interface.
-When initiated, the NS Lookup test will contact DNSServer and look up HostName NumberOfRepetitions times.
-There will be a Result instance for each time the device performs a DNS lookup, which is determined by the value of NumberOfRepetitions.
-Any previous Result instances are removed when a new test is initiated.","-","2.12"
-"Renew()","command","-","The DHCP client will renew its DHCP lease.","-","2.12"
-"Renew()","command","-","The Device.DHCPv6.Client.{i}. will renew its DHCPv6-supplied information (i.e. the Agent will do a renew or information request as needed, updating both stateful and stateless parameter values discovered by this Client instance).","-","2.12"
-"Reset()","command","-","On a reset the device MUST reset the session by performing an initial authentication attempt as defined in [Section 9.6.1.3/802.1x-2004], Initialize Port by sending out the EAP start message.
-The device MAY delay resetting the resource in order to avoid interruption of a user service such as an ongoing voice call.","-","2.12"
-"Disconnect()","command","-","On a reset the device MUST disconnect (forced unauthentication) the resource.
-The device MAY delay re-authentication of the resource in order to avoid interruption of a user service such as an ongoing voice call.","-","2.12"
-"CheckCredentialsDiagnostics()","command","-","[ASYNC] Checks whether the input Username and Password are valid for allowing access to the user interface on the device. If not valid, then an indication of why they are not valid is output.","-","2.15"
-"Reset()","command","-","Reset the SmartCard Reader and the associated SmartCard.","-","2.12"
-"ForceSample()","command","-","Force statistics for the current sample to be calculated and updated in the data model.
-If this is the first time that this command is called during the current sample interval, this MUST cause a new value to be added to each of the periodic statistics comma-separated list parameters, and the ReportEndTime and all SampleSeconds parameters MUST be updated accordingly.
-If this is not the first time that this command is during the current sample interval, then the new values that were added as described in the previous paragraph, and the ReportEndTime and all SampleSeconds parameters, MUST be updated accordingly.
-Note that {{param: empty ref only valid in parameter descriptions}} just provides a “sneak preview” of the current sample. It does not create a new sample and it does not interfere with the sample interval schedule.
-At the end of each sample interval, if this command was executed during the sample interval then the new values that were added as described above, and the ReportEndTime and all SampleSeconds parameters, will be updated accordingly. In other words, the partial sample data that was created when the command was executed will be updated one last time at the end of the sample interval.","-","2.12"
-"GPSReset()","command","-","Reset the GPS Hardware.","-","2.12"
-"ForceCollection()","command","-","Start the bulk data collection and transmission as defined in this profile immediately, regardless of the current values of the Enable and ReportingInterval parameters.
-This command can be used for testing of the bulk data collection mechanism and profile but also to preempt any regular schedule without affecting it.","-","2.15"
-"ForceReconnect()","command","-","Disconnects the MQTT client from the MQTT broker and reconnects it again (toggle connection). It is only effective if the MQTT client is currently connected to the MQTT broker (Parameter Status is Connected).
-If the MQTT client is in a different state, the command has no effect.
-This command may be used to immediately apply changes in the MQTT connection settings.","-","2.12"
-"ForceReconnect()","command","-","Disconnects the MQTT bridge to the remote MQTT broker and reconnects it again (toggle connection). It is only effective if the MQTT bridge is currently connected to the remote MQTT broker (Parameter Status is Connected).
-If the MQTT bridge is in a different state, the command has no effect.
-This command may be used to immediately apply changes in the MQTT connection settings.","-","2.12"
-"AddCertificate()","command","-","This command is issued to allow a Controller (with the proper permissions) to add a new certificate to Certificate.{i}. This does not automatically produce a trust relationship with the host identified by the Certificate. To produce a trust relationship, an entry is required to exist in Controller.{i}.Credential or ControllerTrust.Credential.{i}.Credential that references the new Certificate.{i} entry. The Agent will use the Serial Number and Issuer fields from the input Certificate to populate the Certificate.{i}.SerialNumber and Certificate.{i}.Issuer parameters. If Certificate already has an instance with the same Certificate.{i}.SerialNumber and Certificate.{i}.Issuer parameters, this command will fail. To replace an instance with the same Certificate.{i}.SerialNumber and Certificate.{i}.Issuer, the existing instance must first be deleted.","-","2.12"
-"AddMyCertificate()","command","-","This command is issued to allow a Controller to add a new certificate for itself. This can be useful when the current certificate is expiring or has become compromised. This command creates a new entry in Certificate and adds a reference to the new entry to the Controller’s Controller.{i}.Credential. The Agent will use the Serial Number and Issuer fields from the input Certificate to populate the Certificate.{i}.SerialNumber and Certificate.{i}.Issuer parameters. If Certificate already has an instance with the same Certificate.{i}.SerialNumber and Certificate.{i}.Issuer parameters, this command will fail. To replace an instance with the same Certificate.{i}.SerialNumber and Certificate.{i}.Issuer, the existing instance must first be deleted.
-This command can only be used by the Controller to whom the object belongs. If the Controller issuing the USP Operate message is a different Controller, the message MUST be denied.","-","2.12"
-"SendOnBoardRequest()","command","-","Requests the Agent to send an OnBoardRequest notification to this Controller.","-","2.12"
-"Reset()","command","-","[ASYNC] If enabled, this command will either request to start or restart an WebSocket session with the Controller.","-","2.0"
-"Reset()","command","-","[ASYNC] If the Device.LocalAgent.Controller.{i}.E2ESession. is enabled then this command will either request to start or restart a Session Context with the remote endpoint.
-If the Device.LocalAgent.Controller.{i}.E2ESession. is not enabled and there is an active Session Context then this command will terminate that Session Context with the remote endpoint.
-If the Device.LocalAgent.Controller.{i}.E2ESession. is not enabled and there is no active Session Context then this command does nothing.","-","2.12"
-"Delete()","command","-","This command is issued to allow a Controller (with the proper permissions) to delete an entry from the Certificate.{i}. It also removes references to the Certificate in LocalAgent.Controller.{i}.Credential or LocalAgent.ControllerTrust.Credential.{i}.Credential and removes any X.509 certificate data the Agent had stored related to the entry.","-","2.12"
-"GetFingerprint()","command","-","This command is issued to allow a Controller to request the value of a fingerprint calculated for the specified table entry using the input FingerprintAlgorithm.","-","2.12"
-"RequestChallenge()","command","-","This command is issued to retrieve the instruction for the referenced challenge.
-There is at most one (1) outstanding RequestChallenge for a requesting Controller.
-As such, any new challenges with a different value of the ChallengeRef parameter are denied until a successful response to the outstanding challenge is received by the Agent or the current RequestChallenge expires.
-When the value of the ChallengeRef parameter defined in the RequestChallenge does not exist, the Agent returns an “Invalid Value” error.","-","2.12"
-"ChallengeResponse()","command","-","This command is issued to return the response of challenge.","-","2.12"
-"Cancel()","command","-","Request cancelation of this Device.LocalAgent.Request.{i}.’s command.
-This command completes immediately. If successful, Status will immediately change to Canceling and will change to Canceled when the cancelation is complete.","-","2.12"
-"InstallDU()","command","-","[ASYNC] Install one or more Deployment Units (DUs) to the associated Device.SoftwareModules..","-","2.12"
-"SetRunLevel()","command","-","Provides a mechanism to remotely manipulate the run level of this Device.SoftwareModules.ExecEnv.{i}., meaning that altering this comand will change the value of the CurrentRunLevel.
-Run levels dictate which Execution Units will be started. Execution Units will be started if CurrentRunLevel is greater than or equal to ExecutionUnit.{i}.RunLevel and ExecutionUnit.{i}.AutoStart is true.","-","2.12"
-"Reset()","command","-","This command causes this Device.SoftwareModules.ExecEnv.{i}. to revert back to the state it was in when the device last issued a Boot event with a cause of a local or remote factory reset.
-The following requirements dictate what MUST happen for the reset to be complete:
-All Deployment Units that were installed after the last Boot (with cause of a factory reset) event MUST be removed
-All persistent storage, configuration files, and log files that were associated with the removed Deployment Units MUST be removed
-Any Deployment Unit that is still installed against the Execution Environment MUST be restored to the version present when the last Boot (with cause of a factory reset) event was issued
-Any Deployment Unit that was present when the last Boot (with cause of a factory reset) event was issued, but was subsequently uninstalled and is now not present, MUST be installed with the version that was present when the last Boot (with cause of a factory reset) event was issued
-The Execution Environment MUST be restored to the version and configuration present when the last Boot (with cause of a factory reset) event was issued
-The Execution Environment MUST be restarted after all other restoration requirements have been met","-","2.12"
-"Update()","command","-","[ASYNC] Update the associated Device.SoftwareModules.DeploymentUnit.{i}..","-","2.1"
-"Uninstall()","command","-","[ASYNC] Uninstall the associated Device.SoftwareModules.DeploymentUnit.{i}..","-","2.1"
-"SetRequestedState()","command","-","Set the state transition that the Controller is requesting for this instance of the Device.SoftwareModules.ExecutionUnit.{i}. object.
-If this instance of the Device.SoftwareModules.ExecutionUnit.{i}. object is associated with an Execution Environment that is disabled and an attempt is made to alter this value, then a error message MUST be generated.","-","2.1"
-"Toggle()","command","-","[ASYNC] Toggle the Value.","-","2.13"
-"StepUp()","command","-","[ASYNC] Step Up the Value.","-","2.13"
-"StepDown()","command","-","[ASYNC] Step Down the Value.","-","2.13"
-"StepUp()","command","-","[ASYNC] Step up the Value to the next allowed value in the enum.","-","2.13"
-"StepDown()","command","-","[ASYNC] Step down the Value to the previous allowed value in the enum.","-","2.13"
